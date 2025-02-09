@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Binance Phone Number Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        #progress-container {
+            display: none;
+            margin: 20px auto;
+            width: 80%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+        }
+        #progress-bar {
+            height: 20px;
+            width: 0%;
+            background-color: #4caf50;
+            border-radius: 10px;
+        }
+        a#download {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a#download:hover {
+            background-color: #218838;
+        }
+    </style>
+    <script>
+        // Function to get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function uploadFile() {
+            let fileInput = document.getElementById("file");
+            if (fileInput.files.length === 0) {
+                alert("⚠️ Please select a file to upload.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            // Get CSRF token
+            const csrftoken = getCookie('csrftoken');
+
+            // Show the progress bar
+            document.getElementById("progress-container").style.display = "block";
+            document.getElementById("progress-bar").style.width = "0%";
+
+            fetch("/binance/process_file/", {
+                method: "POST",
+                headers: { "X-CSRFToken": csrftoken },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("❌ Error: " + data.error);
+                } else {
+                    document.getElementById("total").innerText = data.total;
+                    document.getElementById("valid").innerText = data.valid;
+                    document.getElementById("invalid").innerText = data.invalid;
+
+                    // Simulate progress bar completion
+                    let progressBar = document.getElementById("progress-bar");
+                    progressBar.style.width = "100%";
+
+                    document.getElementById("download").style.display = "block";
+                    document.getElementById("download").href = data.download_url;
+                }
+            })
+            .catch(error => alert("❌ Error processing file."))
+            .finally(() => {
+                // Hide progress bar after 2 seconds
+                setTimeout(() => {
+                    document.getElementById("progress-container").style.display = "none";
+                }, 2000);
+            });
+        }
+    </script>
+</head>
+<body>
+    <h2>📋 Binance Phone Number Checker</h2>
+
+    <!-- CSRF Token for Django -->
+    {% csrf_token %}
+
+    <input type="file" id="file" accept=".txt">
+    <button onclick="uploadFile()">Upload & Check ✅</button>
+
+    <!-- Progress Bar -->
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <div class="results">
+        <h3>Results:</h3>
+        <p>Total Numbers: <span id="total">0</span></p>
+        <p>✅ Valid Numbers: <span id="valid">0</span></p>
+        <p>❌ Invalid Numbers: <span id="invalid">0</span></p>
+    </div>
+
+    <a id="download" href="#">⬇️ Download Valid Numbers</a>
+</body>
+</html>
